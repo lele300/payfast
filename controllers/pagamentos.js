@@ -6,6 +6,8 @@ module.exports = (app) => {
 
     app.post("/pagamentos/pagamento", (req,resp) => {
         const pagamento = req.body;
+        pagamento.status = "CRIADO";
+        pagamento.dataPagamento = new Date();
         console.log(pagamento);
         resp.send("OK. Pagamento recebido");
     });
