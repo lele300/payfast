@@ -1,0 +1,24 @@
+{
+  "name": "payfast",
+  "version": "1.0.0",
+  "description": "Um gateway de pagamento que utilizará recursos HTTP",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lele300/payfast.git"
+  },
+  "keywords": [
+    "gateway",
+    "pagamentos",
+    "api"
+  ],
+  "author": "Leonardo Lopes",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lele300/payfast/issues"
+  },
+  "homepage": "https://github.com/lele300/payfast#readme"
+}
