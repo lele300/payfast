@@ -8,6 +8,7 @@ module.exports = () => {
     app.use(bodyParser.json());
     consign()
         .include("controllers")
+        .then("dao")
         .into(app);
 
     return app;
