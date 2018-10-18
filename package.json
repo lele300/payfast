@@ -20,5 +20,10 @@
   "bugs": {
     "url": "https://github.com/lele300/payfast/issues"
   },
-  "homepage": "https://github.com/lele300/payfast#readme"
+  "homepage": "https://github.com/lele300/payfast#readme",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "consign": "^0.1.6",
+    "express": "^4.16.4"
+  }
 }
