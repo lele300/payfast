@@ -19,30 +19,105 @@ module.exports = (app) => {
             resp.status(200).send(pagamento);
         });
     });
-
-    app.post("/pagamentos/pagamento", (req,resp) => {
-        let pagamento = req.body;
-        req.assert("forma_de_pagamento","Forma de pagamento é obrigatória").notEmpty();
-        req.assert("valor","É necessário informar um valor e deve ser um decimal").notEmpty().isFloat();
-        let errors = req.validationErrors();
-        if(errors) {
-            resp.status(500).send(errors);
-            console.log("Erros de validação encontrados");
-            return;
-        }
-        pagamento.status = "CRIADO";
-        pagamento.dataPagamento = new Date();
+    
+    app.delete("/pagamentos/pagamento/:id", (req,resp) => {
+        let pagamento = {};
+        const id = req.params.id; //Recupera o valor do parâmetro ID do request
+        pagamento.id = id;
+        pagamento.status = "CANCELADO";
         const connection = app.dao.connectionFactory();
         const pagamentoDAO = new app.dao.PagamentoDAO(connection);
+        pagamentoDAO.atualiza(pagamento, (errors) => {
+            if(errors) {
+                resp.status(500).send(errors);
+                return;
+            }
+            resp.status(204).send(pagamento);
+        });
+    });
+
+    app.post("/pagamentos/pagamento", (req,resp) => {
+        req.assert("pagamento.forma_de_pagamento","Forma de pagamento é obrigatória").notEmpty();
+        req.assert("pagamento.valor","É necessário informar um valor e deve ser um decimal").notEmpty().isFloat();
+        let errors = req.validationErrors();
+
+        if(errors) {
+            console.log("Erros de validação encontrados");
+            resp.status(400).send(errors);
+            return;
+        }
+        let pagamento = req.body["pagamento"];
+        const PAGAMENTO_CRIADO = "CRIADO", PAGAMENTO_CANCELADO = "CANCELADO", PAGAMENTO_CONFIRMADO = "CONFIRMADO";
+
+        pagamento.status = PAGAMENTO_CRIADO;
+        pagamento.dataPagamento = new Date();
+
+        const connection = app.dao.connectionFactory();
+        const pagamentoDAO = new app.dao.PagamentoDAO(connection);
+
         pagamentoDAO.salva(pagamento, (errors,results) => {
             if(errors) {
-                resp.status(400).send(errors);
-                console.log(errors);
+                console.log("Erro ao cadastrar no banco: "+errors);
+                resp.status(500).send(errors);
                 return;
-            } 
-            resp.location("/pagamentos/pagamento/"+ results.insertId);
-            resp.status(201).send(pagamento);
-            console.log("Pagamento criado com sucesso");
+            }
+            pagamento.id = results.insertId; //Recupera o ID inserido no banco
+            console.log("Objeto Pagamento foi criado no banco de dados");
+            
+            if(pagamento.forma_de_pagamento == "cartao"){
+                const cartao = req.body["cartao"];
+                console.log(cartao);
+    
+                const serviceCartoes = new app.servicos.cartoesClient();
+                serviceCartoes.autoriza(cartao, (exception, request, response, data) => {
+                    if(exception) {
+                        console.log(exception);
+                        resp.status(400).send(exception);
+                        return;
+                    }
+                    console.log(data);
+                    resp.location("/pagamentos/pagamento/"+ pagamento.id);
+                    const response = {
+                        dados_de_pagamento : pagamento,
+                        cartao : cartao,
+                        links : [
+                            {
+                                href : "http://localhost:3000/pagamentos/pagamento/"+pagamento.id,
+                                rel : PAGAMENTO_CONFIRMADO,
+                                method : "PUT"
+                            },
+                            {
+                                href : "http://localhost:3000/pagamentos/pagamento/"+pagamento.id,
+                                rel : PAGAMENTO_CANCELADO,
+                                method : "DELETE" 
+                            }
+                        ]
+                    };
+                    resp.status(201).json(response);
+                    return;
+                });
+
+                resp.status(201).json(cartao);
+                return;
+            }
+            resp.location("/pagamentos/pagamento/"+ pagamento.id);
+            const response = {
+                dados_de_pagamento : pagamento,
+                links : [
+                    {
+                        href : "http://localhost:3000/pagamentos/pagamento/"+pagamento.id,
+                        rel : PAGAMENTO_CONFIRMADO,
+                        method : "PUT"
+                    },
+                    {
+                        href : "http://localhost:3000/pagamentos/pagamento/"+pagamento.id,
+                        rel : PAGAMENTO_CANCELADO,
+                        method : "DELETE" 
+                    }
+                ]
+            }; 
+            resp.status(201).send(response);
+            console.log("Pagamento com Payfast criado com sucesso!!!");
         });
         connection.end();
     });

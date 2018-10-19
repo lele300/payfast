@@ -11,6 +11,7 @@ module.exports = () => {
     consign()
         .include("controllers")
         .then("dao")
+        .then("servicos")
         .into(app);
 
     return app;
