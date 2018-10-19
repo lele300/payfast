@@ -12,6 +12,10 @@ function PagamentoDAO(connection){
     PagamentoDAO.prototype.buscaPorId = (id, callback) => {
         this._connection.query("SELECT * FROM pagamento WHERE id =",[id], callback);
     };
+
+    PagamentoDAO.prototype.atualiza = (pagamento, callback) => {
+        this._connection.query("UPDATE pagamento SET status = ? WHERE id = ?", [pagamento.status, pagamento.id], callback);
+    };
 }
 
 module.exports = () => {
