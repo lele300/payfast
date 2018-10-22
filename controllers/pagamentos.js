@@ -65,9 +65,7 @@ module.exports = (app) => {
             console.log("Objeto Pagamento foi criado no banco de dados");
             
             if(pagamento.forma_de_pagamento == "cartao"){
-                const cartao = req.body["cartao"];
-                console.log(cartao);
-    
+                const cartao = req.body["cartao"];    
                 const serviceCartoes = new app.servicos.cartoesClient();
                 serviceCartoes.autoriza(cartao, (exception, request, response, data) => {
                     if(exception) {
@@ -75,11 +73,9 @@ module.exports = (app) => {
                         resp.status(400).send(exception);
                         return;
                     }
-                    console.log(data);
-                    resp.location("/pagamentos/pagamento/"+ pagamento.id);
-                    const response = {
+                    const res = {
                         dados_de_pagamento : pagamento,
-                        cartao : cartao,
+                        cartao : data,
                         links : [
                             {
                                 href : "http://localhost:3000/pagamentos/pagamento/"+pagamento.id,
@@ -93,11 +89,9 @@ module.exports = (app) => {
                             }
                         ]
                     };
-                    resp.status(201).json(response);
-                    return;
+                    resp.location("/pagamentos/pagamento/"+ pagamento.id);
+                    resp.status(201).json(res);
                 });
-
-                resp.status(201).json(cartao);
                 return;
             }
             resp.location("/pagamentos/pagamento/"+ pagamento.id);
