@@ -12,14 +12,3 @@ function createMemcachedClient() {
     });
     return client;
 }
-
-cliente.set("pagamento-20", {id :"20"}, 60000, erro => { // .set(chave do cache, info a ser armazenada no cache, tempo que ficará no cache, callback);
-    console.log("Nova chave adicionada ao cache: pagamento-20");
-});
-
-cliente.get("pagamento-20", (erro, result) => {
-    if(erro || !result) {
-        console.log("MISS - Chave não encontrada");
-    } 
-    console.log("HIT - Valor: "+ JSON.stringify(result));
-});
