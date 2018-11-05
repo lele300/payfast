@@ -4,6 +4,23 @@ module.exports = (app) => {
         resp.send("OK.");
     });
 
+    app.get("/pagamentos/pagamento/:id", (req,resp) => {
+        const id = req.params.id;
+        let pagamentos = {};
+        console.log("Consultando o Pgto. "+id);
+        const connection = app.dao.connectionFactory();
+        const pagamentoDAO = new app.dao.PagamentoDAO(connection);
+        pagamentoDAO.buscaPorId(id, (err,results) => {
+            if(err) {
+                console.log("Erro ao consultar no banco: "+err);
+                resp.status(500).send(err);
+                return;
+            }
+            console.log("Pagamento encontrado: "+ JSON.stringify(results));
+            resp.json(results);
+        });
+    });
+
     app.put("/pagamentos/pagamento/:id", (req,resp) => {
         let pagamento = {};
         const id = req.params.id; //Recupera o valor do parâmetro ID do request
@@ -47,7 +64,9 @@ module.exports = (app) => {
             return;
         }
         let pagamento = req.body["pagamento"];
-        const PAGAMENTO_CRIADO = "CRIADO", PAGAMENTO_CANCELADO = "CANCELADO", PAGAMENTO_CONFIRMADO = "CONFIRMADO";
+        const PAGAMENTO_CRIADO = "CRIADO", 
+            PAGAMENTO_CANCELADO = "CANCELADO", 
+            PAGAMENTO_CONFIRMADO = "CONFIRMADO";
 
         pagamento.status = PAGAMENTO_CRIADO;
         pagamento.dataPagamento = new Date();
