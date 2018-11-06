@@ -1,1 +1,3 @@
 {"message":"Consultando pagamento: 42","level":"info"}
+{"message":"Consultando pagamento: 42","level":"info"}
+{"message":"::1 - - [06/Nov/2018:17:49:49 +0000] \"GET /pagamentos/pagamento/42 HTTP/1.1\" 200 177\n","level":"info"}
