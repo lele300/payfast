@@ -1,3 +1,5 @@
+const logger = require("../servicos/logger");
+
 module.exports = (app) => {
     app.get("/pagamentos", (req,resp) => {
         console.log("Eu sou a rota Teste");
@@ -7,6 +9,7 @@ module.exports = (app) => {
     app.get("/pagamentos/pagamento/:id", (req,resp) => {
         const id = req.params.id;
         const memCachedClient = app.servicos.memCachedClient();
+        logger.info("Consultando pagamento: " +id);
         memCachedClient.get("pagamento-" +id, (erro, result) => {
             if(erro || !result) {
                 console.log("MISS - Chave não encontrada");
