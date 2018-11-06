@@ -6,18 +6,28 @@ module.exports = (app) => {
 
     app.get("/pagamentos/pagamento/:id", (req,resp) => {
         const id = req.params.id;
-        let pagamentos = {};
-        console.log("Consultando o Pgto. "+id);
-        const connection = app.dao.connectionFactory();
-        const pagamentoDAO = new app.dao.PagamentoDAO(connection);
-        pagamentoDAO.buscaPorId(id, (err,results) => {
-            if(err) {
-                console.log("Erro ao consultar no banco: "+err);
-                resp.status(500).send(err);
+        const memCachedClient = app.servicos.memCachedClient();
+        memCachedClient.get("pagamento-" +id, (erro, result) => {
+            if(erro || !result) {
+                console.log("MISS - Chave não encontrada");
+                const connection = app.dao.connectionFactory();
+                const pagamentoDAO = new app.dao.PagamentoDAO(connection);
+                pagamentoDAO.buscaPorId(id, (err,results) => {
+                    console.log("Consultando o Pgto. "+id+ " na base de dados");
+                    if(err) {
+                        console.log("Erro ao consultar no banco: "+err);
+                        resp.status(500).send(err);
+                        return;
+                    }
+                    console.log("Pagamento encontrado: "+ JSON.stringify(results));
+                    resp.json(results);
+                    return;
+                });
                 return;
-            }
-            console.log("Pagamento encontrado: "+ JSON.stringify(results));
-            resp.json(results);
+            } 
+            console.log("HIT - Valor: "+ JSON.stringify(result));
+            resp.json(result);
+            return;
         });
     });
 
@@ -33,6 +43,10 @@ module.exports = (app) => {
                 resp.status(500).send(errors);
                 return;
             }
+            const memCachedClient = app.servicos.memCachedClient();
+            memCachedClient.set("pagamento-" +pagamento.id, pagamento, 60000, (err, results) => {
+                console.log("Nova chave adicionada ao cache: " +pagamento.id);
+            });
             resp.status(200).send(pagamento);
         });
     });
@@ -49,8 +63,13 @@ module.exports = (app) => {
                 resp.status(500).send(errors);
                 return;
             }
+            const memCachedClient = app.servicos.memCachedClient();
+            memCachedClient.set("pagamento-" +pagamento.id, pagamento, 60000, (err, results) => {
+                console.log("Nova chave criada: " +pagamento.id);
+            });
             resp.status(204).send(pagamento);
-        });
+            return;
+        }); 
     });
 
     app.post("/pagamentos/pagamento", (req,resp) => {
@@ -75,14 +94,18 @@ module.exports = (app) => {
         const pagamentoDAO = new app.dao.PagamentoDAO(connection);
 
         pagamentoDAO.salva(pagamento, (errors,results) => {
+
             if(errors) {
                 console.log("Erro ao cadastrar no banco: "+errors);
                 resp.status(500).send(errors);
                 return;
             }
+
             pagamento.id = results.insertId; //Recupera o ID inserido no banco
             console.log("Objeto Pagamento foi criado no banco de dados");
-            
+
+            const memCachedClient = app.servicos.memCachedClient();  
+
             if(pagamento.forma_de_pagamento == "cartao"){
                 const cartao = req.body["cartao"];    
                 const serviceCartoes = new app.servicos.cartoesClient();
@@ -110,6 +133,9 @@ module.exports = (app) => {
                     };
                     resp.location("/pagamentos/pagamento/"+ pagamento.id);
                     resp.status(201).json(res);
+                    memCachedClient.set("pagamento-" +pagamento.id, res, 60000, erro => { // .set(chave do cache, info a ser armazenada no cache, tempo que ficará no cache, callback);
+                        console.log("Nova chave adicionada ao cache com cartão: " +pagamento.id);
+                    });  
                 });
                 return;
             }
@@ -130,6 +156,9 @@ module.exports = (app) => {
                 ]
             }; 
             resp.status(201).send(response);
+            memCachedClient.set("pagamento-" +pagamento.id, response, 60000, erro => { // .set(chave do cache, info a ser armazenada no cache, tempo que ficará no cache, callback);
+                console.log("Nova chave adicionada ao cache: " +pagamento.id);
+            });  
             console.log("Pagamento com Payfast criado com sucesso!!!");
         });
         connection.end();
