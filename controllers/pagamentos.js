@@ -26,7 +26,6 @@ module.exports = (app) => {
                     resp.json(results);
                     return;
                 });
-                return;
             } 
             console.log("HIT - Valor: "+ JSON.stringify(result));
             resp.json(result);
